@@ -1,20 +1,26 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-echo "Démarrage du conteneur de test..."
-docker run -d -p 5000:5000 --name flask-test flask-monitoring-app
+echo "=== Test CI/CD – Démarrage du conteneur de test ==="
+docker rm -f flask-test 2>/dev/null || true
 
-echo "Attente du démarrage..."
-sleep 8
+# Build rapide de l'image fraîche (au cas où)
+docker build -t flask-monitoring-app .
 
-echo "Test de disponibilité..."
-response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/health)
+# Lancement en arrière-plan
+docker run -d --name flask-test -p 5000:5000 flask-monitoring-app
 
-if [ "$response" -eq 200 ]; then
-    echo "Application disponible (code $response)"
-else
-    echo "Application indisponible (code $response)"
-    exit 1
-fi
+# Attente active intelligente (max 30s)
+for i in {1..30}; do
+    if curl -f -s http://localhost:5000/health >/dev/null 2>&1; then
+        echo "Application prête en ${i}s !"
+        docker stop flask-test && docker rm flask-test
+        exit 0
+    fi
+    sleep 1
+done
 
+echo "ERREUR : l'application n'a pas répondu en 30s"
+docker logs flask-test
 docker stop flask-test && docker rm flask-test
+exit 1

@@ -1,0 +1,50 @@
+name: CI/CD Flask Monitoring
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: self-hosted   # Très important sur ton Ubuntu Server
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Nettoyage des anciens conteneurs/images
+        run: |
+          docker stop flask-test || true
+          docker rm flask-test || true
+          docker rmi flask-monitoring-app || true
+
+      - name: Construction de l'image
+        run: docker build -t flask-monitoring-app .
+
+      - name: Test de santé de l'application
+        run: ./test_app.sh
+
+  deploy:
+    needs: build-and-test
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Arrêt propre de l'ancienne stack
+        run: |
+          cd advanced-monitoring
+          docker-compose down || true
+
+      - name: Déploiement de la nouvelle stack
+        run: |
+          cd advanced-monitoring
+          docker-compose up -d --build
+
+      - name: Attente et vérification Grafana/Prometheus
+        run: |
+          echo "Attente 20s que Grafana soit prêt..."
+          sleep 20
+          curl -f http://localhost:3000/api/health || echo "Grafana pas encore prêt, normal au premier démarrage"

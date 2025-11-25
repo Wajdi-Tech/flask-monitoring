@@ -1,0 +1,11 @@
+route:
+  receiver: 'slack'
+
+receivers'
+
+receivers:
+  - name: 'slack'
+    slack_configs:
+      - api_url:
+        channel: '#alerts'
+        text: '{{ .CommonAnnotations.description }}'

@@ -13,11 +13,11 @@ by_path_counter = metrics.counter(
 @app.route('/')
 @by_path_counter
 def hello():
-        return "<h1>CI/CD 100% OK – 11:21:45 – 25/11/2025</h1>", 200
+    return "<h1>RUNNER EN MODE FOREGROUND – 11:40:23 – SUCCÈS TOTAL</h1>", 200
 
 @app.route('/health')
 def health():
-        return "<h1>CI/CD 100% OK – 11:21:45 – 25/11/2025</h1>", 200
+    return "<h1>RUNNER EN MODE FOREGROUND – 11:40:23 – SUCCÈS TOTAL</h1>", 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
